@@ -2,6 +2,7 @@ package paillier
 
 import (
 	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"io"
 	"math/big"
@@ -204,4 +205,56 @@ func Mul(pubKey *PublicKey, cipher []byte, constant []byte) []byte {
 
 	// c ^ x mod n^2
 	return new(big.Int).Exp(c, x, pubKey.NSquared).Bytes()
+}
+
+type ExportedPrivKey struct {
+	PublicKey
+	Pp         *big.Int
+	Ppp        *big.Int
+	Ppminusone *big.Int
+	Pq         *big.Int
+	Pqq        *big.Int
+	Pqminusone *big.Int
+	Ppinvq     *big.Int
+	Php        *big.Int
+	Phq        *big.Int
+	Pn         *big.Int
+}
+
+func Marshal(p *PrivateKey) []byte {
+	r, err := json.Marshal(ExportedPrivKey{
+		PublicKey:  p.PublicKey,
+		Pp:         p.p,
+		Ppp:        p.pp,
+		Ppminusone: p.pminusone,
+		Pq:         p.q,
+		Pqq:        p.qq,
+		Pqminusone: p.qminusone,
+		Ppinvq:     p.pinvq,
+		Php:        p.hp,
+		Phq:        p.hq,
+		Pn:         p.n,
+	})
+	if err != nil {
+		return nil
+	}
+	return r
+}
+
+func UnMarshal(b []byte) *PrivateKey {
+	tmp := ExportedPrivKey{}
+	json.Unmarshal(b, &tmp)
+	return &PrivateKey{
+		PublicKey: tmp.PublicKey,
+		p:         tmp.Pp,
+		pp:        tmp.Ppp,
+		pminusone: tmp.Ppminusone,
+		q:         tmp.Pq,
+		qq:        tmp.Pqq,
+		qminusone: tmp.Pqminusone,
+		pinvq:     tmp.Ppinvq,
+		hp:        tmp.Php,
+		hq:        tmp.Phq,
+		n:         tmp.Pn,
+	}
 }
